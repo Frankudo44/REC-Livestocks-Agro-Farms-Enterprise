@@ -14,6 +14,7 @@
   "use strict";
 
   const REC = (win.REC = win.REC || {});
+  REC.build = "2026-10-09.1";
 
   // Injected at build time via Vercel env (optional).
   // Falls back to values edited in this file for local dev.
@@ -4098,6 +4099,7 @@ const { data } = await REC.supabaseClient.auth.getSession();
       "</div>" +
       '<a href="#" class="admin-nav-a" data-logout style="display:flex;align-items:center;gap:.6rem;font-size:.86rem;font-weight:700;color:#d7e6da">' +
       '<svg aria-hidden="true" style="width:18px;height:18px"><use href="../assets/icons/sprite.svg#i-logout"></use></svg> Sign Out</a>' +
+      '<span style="display:block;margin-top:10px;font-size:10px;letter-spacing:.08em;opacity:.55">BUILD ' + (REC.build || "dev") + "</span>" +
       "</div>" +
       "</aside>" +
       '<div class="admin-backdrop" id="admin-backdrop"></div>' +
