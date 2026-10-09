@@ -14,7 +14,7 @@
   "use strict";
 
   const REC = (win.REC = win.REC || {});
-  REC.build = "2026-10-09.2";
+  REC.build = "2026-10-09.3";
 
   // Injected at build time via Vercel env (optional).
   // Falls back to values edited in this file for local dev.
@@ -4196,48 +4196,60 @@ document.querySelector("[data-logout]").addEventListener("click", async (e) => {
   document.addEventListener("DOMContentLoaded", () => {
     const root = document.getElementById("admin-shell");
     if (root) {
+      let diagEl = null;
+      const stg = (t) => {
+        try {
+          if (!diagEl) {
+            diagEl = document.createElement("div");
+            diagEl.style.cssText =
+              "position:fixed;right:8px;bottom:8px;z-index:2147483647;background:#0b0b0b;color:#39ff14;" +
+              "font:11px/1.5 ui-monospace,monospace;padding:8px 10px;max-width:92vw;white-space:pre-wrap;border-radius:6px;opacity:.95";
+            document.body.appendChild(diagEl);
+          }
+          diagEl.textContent = "DIAG build=" + (REC.build || "?") + " | " + t;
+        } catch (e) {}
+      };
+      stg("start loaded=" + !!win.REC_LOADED + " sb=" + !!REC.supabaseClient + " AdminPage=" + (win.AdminPage ? "yes" : "no"));
       ADMIN.guard()
         .then(async (ok) => {
+          stg("guard done ok=" + ok + " AdminPage=" + (win.AdminPage ? "yes" : "no"));
           if (!ok) return;
           const active = root.getAttribute("data-page") || "dashboard";
           ADMIN.render(active);
+          stg("rendered page=" + active);
           try {
             const probe = await ADMIN.sb().from("products").select("id").limit(1);
             if (probe && probe.error) {
               showAdminError("Database access failed: " + (probe.error.message || JSON.stringify(probe.error)));
+              stg("probe error=" + (probe.error.message || "yes"));
+            } else {
+              stg("probe ok n=" + ((probe && probe.data && probe.data.length) || 0) + " AdminPage=" + (win.AdminPage ? "yes" : "no"));
             }
           } catch (e) {
             showAdminError("Database probe threw: " + ((e && e.message) || String(e)));
+            stg("probe threw=" + ((e && e.message) || String(e)));
           }
           if (!win.REC_LOADED) {
             showAdminError("app.js did not finish loading (a script error stopped it). Open DevTools Console for the error.");
           } else if (!win.AdminPage) {
             showAdminError("No page controller is registered for data-page='" + active + "'.");
           }
+          stg("init starting, AdminPage=" + (win.AdminPage ? "yes" : "no"));
           try {
             if (win.AdminPage && win.AdminPage.init) await win.AdminPage.init();
+            stg("init done");
           } catch (e) {
             const c = document.getElementById("admin-content");
             if (c) c.innerHTML = ADMIN.emptyState("Could not load this page", (e && e.message) || String(e));
+            stg("init error=" + ((e && e.message) || String(e)));
           }
-          try {
-            const c = document.getElementById("admin-content");
-            const diag = document.createElement("div");
-            diag.style.cssText =
-              "position:fixed;right:8px;bottom:8px;z-index:2147483647;background:#0b0b0b;color:#39ff14;" +
-              "font:11px/1.5 ui-monospace,monospace;padding:8px 10px;max-width:92vw;white-space:pre-wrap;border-radius:6px;opacity:.92";
-            diag.textContent =
-              "DIAG build=" + (REC.build || "?") +
-              " loaded=" + !!win.REC_LOADED +
-              " sb=" + !!REC.supabaseClient +
-              " AdminPage=" + (win.AdminPage ? "yes" : "no") +
-              " page=" + active +
-              " childNodes=" + (c ? c.childNodes.length : "null") +
-              " htmlLen=" + (c ? c.innerHTML.length : "null");
-            document.body.appendChild(diag);
-          } catch (e) {}
+          const c = document.getElementById("admin-content");
+          stg("end childNodes=" + (c ? c.childNodes.length : "null") + " htmlLen=" + (c ? c.innerHTML.length : "null"));
         })
-        .catch((e) => showAdminError((e && e.message) || String(e)));
+        .catch((e) => {
+          showAdminError((e && e.message) || String(e));
+          stg("guard/flow rejected=" + ((e && e.message) || String(e)));
+        });
     }
     const loginCard = document.getElementById("admin-login-card");
     if (loginCard && win.AdminLogin) win.AdminLogin.init();
