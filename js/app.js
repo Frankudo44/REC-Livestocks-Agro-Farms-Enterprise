@@ -4174,15 +4174,42 @@ document.querySelector("[data-logout]").addEventListener("click", async (e) => {
   ADMIN.icon = UI.icon;
   ADMIN.esc = UI.esc;
 
+  function showAdminError(msg) {
+    if (!document.body || !document.body.classList.contains("admin-body")) return;
+    const host = document.getElementById("admin-content") || document.getElementById("admin-shell");
+    if (!host) return;
+    let el = document.getElementById("admin-error-banner");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "admin-error-banner";
+      el.style.cssText =
+        "background:#fdecea;border:1px solid #f5c6cb;color:#611a15;padding:12px 16px;" +
+        "border-radius:8px;margin:12px;font:600 13px/1.45 ui-monospace,monospace;white-space:pre-wrap;" +
+        "position:relative;z-index:9999";
+      host.prepend(el);
+    }
+    el.textContent = "Admin error: " + msg;
+  }
+  win.showAdminError = showAdminError;
+  win.addEventListener("error", (e) => showAdminError(e.message || "Script error"));
+  win.addEventListener("unhandledrejection", (e) => showAdminError((e.reason && e.reason.message) || String(e.reason)));
+
   document.addEventListener("DOMContentLoaded", () => {
     const root = document.getElementById("admin-shell");
     if (root) {
-      ADMIN.guard().then((ok) => {
-        if (!ok) return;
-        const active = root.getAttribute("data-page") || "dashboard";
-        ADMIN.render(active);
-        if (win.AdminPage && win.AdminPage.init) win.AdminPage.init();
-      });
+      ADMIN.guard()
+        .then(async (ok) => {
+          if (!ok) return;
+          const active = root.getAttribute("data-page") || "dashboard";
+          ADMIN.render(active);
+          try {
+            if (win.AdminPage && win.AdminPage.init) await win.AdminPage.init();
+          } catch (e) {
+            const c = document.getElementById("admin-content");
+            if (c) c.innerHTML = ADMIN.emptyState("Could not load this page", (e && e.message) || String(e));
+          }
+        })
+        .catch((e) => showAdminError((e && e.message) || String(e)));
     }
     const loginCard = document.getElementById("admin-login-card");
     if (loginCard && win.AdminLogin) win.AdminLogin.init();
