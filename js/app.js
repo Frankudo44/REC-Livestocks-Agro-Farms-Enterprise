@@ -71,8 +71,8 @@
     var src = document.currentScript && document.currentScript.src;
     if (!src) return "";
     try {
-      // this file is always <root>/js/app.js
-      return new URL("../../", src).href;
+      // this file is always <root>/js/app.js, so one level up is the site root
+      return new URL("../", src).href;
     } catch (e) {
       return "";
     }
