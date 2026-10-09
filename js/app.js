@@ -14,7 +14,7 @@
   "use strict";
 
   const REC = (win.REC = win.REC || {});
-  REC.build = "2026-10-09.1";
+  REC.build = "2026-10-09.2";
 
   // Injected at build time via Vercel env (optional).
   // Falls back to values edited in this file for local dev.
@@ -4220,6 +4220,22 @@ document.querySelector("[data-logout]").addEventListener("click", async (e) => {
             const c = document.getElementById("admin-content");
             if (c) c.innerHTML = ADMIN.emptyState("Could not load this page", (e && e.message) || String(e));
           }
+          try {
+            const c = document.getElementById("admin-content");
+            const diag = document.createElement("div");
+            diag.style.cssText =
+              "position:fixed;right:8px;bottom:8px;z-index:2147483647;background:#0b0b0b;color:#39ff14;" +
+              "font:11px/1.5 ui-monospace,monospace;padding:8px 10px;max-width:92vw;white-space:pre-wrap;border-radius:6px;opacity:.92";
+            diag.textContent =
+              "DIAG build=" + (REC.build || "?") +
+              " loaded=" + !!win.REC_LOADED +
+              " sb=" + !!REC.supabaseClient +
+              " AdminPage=" + (win.AdminPage ? "yes" : "no") +
+              " page=" + active +
+              " childNodes=" + (c ? c.childNodes.length : "null") +
+              " htmlLen=" + (c ? c.innerHTML.length : "null");
+            document.body.appendChild(diag);
+          } catch (e) {}
         })
         .catch((e) => showAdminError((e && e.message) || String(e)));
     }
