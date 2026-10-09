@@ -4176,17 +4176,14 @@ document.querySelector("[data-logout]").addEventListener("click", async (e) => {
 
   function showAdminError(msg) {
     if (!document.body || !document.body.classList.contains("admin-body")) return;
-    const host = document.getElementById("admin-content") || document.getElementById("admin-shell");
-    if (!host) return;
     let el = document.getElementById("admin-error-banner");
     if (!el) {
       el = document.createElement("div");
       el.id = "admin-error-banner";
       el.style.cssText =
-        "background:#fdecea;border:1px solid #f5c6cb;color:#611a15;padding:12px 16px;" +
-        "border-radius:8px;margin:12px;font:600 13px/1.45 ui-monospace,monospace;white-space:pre-wrap;" +
-        "position:relative;z-index:9999";
-      host.prepend(el);
+        "position:fixed;left:0;right:0;top:0;background:#8a1c12;color:#fff;padding:10px 16px;" +
+        "font:600 13px/1.45 ui-monospace,monospace;white-space:pre-wrap;z-index:2147483647;max-height:45vh;overflow:auto";
+      document.body.appendChild(el);
     }
     el.textContent = "Admin error: " + msg;
   }
@@ -4202,6 +4199,14 @@ document.querySelector("[data-logout]").addEventListener("click", async (e) => {
           if (!ok) return;
           const active = root.getAttribute("data-page") || "dashboard";
           ADMIN.render(active);
+          try {
+            const probe = await ADMIN.sb().from("products").select("id").limit(1);
+            if (probe && probe.error) {
+              showAdminError("Database access failed: " + (probe.error.message || JSON.stringify(probe.error)));
+            }
+          } catch (e) {
+            showAdminError("Database probe threw: " + ((e && e.message) || String(e)));
+          }
           try {
             if (win.AdminPage && win.AdminPage.init) await win.AdminPage.init();
           } catch (e) {
