@@ -1,0 +1,70 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "cleanUrls": false,
+  "trailingSlash": false,
+  "rewrites": [
+    { "source": "/sitemap.xml", "destination": "/api/sitemap" },
+
+    { "source": "/shop", "destination": "/pages/shop.html" },
+    { "source": "/shop.html", "destination": "/pages/shop.html" },
+    { "source": "/about", "destination": "/pages/about.html" },
+    { "source": "/about.html", "destination": "/pages/about.html" },
+    { "source": "/contact", "destination": "/pages/contact.html" },
+    { "source": "/contact.html", "destination": "/pages/contact.html" },
+    { "source": "/blog", "destination": "/pages/blog.html" },
+    { "source": "/blog.html", "destination": "/pages/blog.html" },
+    { "source": "/blog-post", "destination": "/pages/blog-post.html" },
+    { "source": "/blog-post.html", "destination": "/pages/blog-post.html" },
+    { "source": "/product", "destination": "/pages/product.html" },
+    { "source": "/product.html", "destination": "/pages/product.html" },
+    { "source": "/cart", "destination": "/pages/cart.html" },
+    { "source": "/cart.html", "destination": "/pages/cart.html" },
+    { "source": "/checkout", "destination": "/pages/checkout.html" },
+    { "source": "/checkout.html", "destination": "/pages/checkout.html" },
+    { "source": "/order-success", "destination": "/pages/order-success.html" },
+    { "source": "/order-success.html", "destination": "/pages/order-success.html" },
+    { "source": "/account", "destination": "/pages/account.html" },
+    { "source": "/account.html", "destination": "/pages/account.html" },
+    { "source": "/privacy", "destination": "/pages/privacy.html" },
+    { "source": "/privacy.html", "destination": "/pages/privacy.html" },
+    { "source": "/terms", "destination": "/pages/terms.html" },
+    { "source": "/terms.html", "destination": "/pages/terms.html" },
+    { "source": "/404", "destination": "/pages/404.html" },
+    { "source": "/404.html", "destination": "/pages/404.html" },
+
+    { "source": "/rule", "destination": "/rule/index.html" },
+    { "source": "/rule/orders", "destination": "/rule/orders.html" },
+    { "source": "/rule/products", "destination": "/rule/products.html" },
+    { "source": "/rule/categories", "destination": "/rule/categories.html" },
+    { "source": "/rule/inventory", "destination": "/rule/inventory.html" },
+    { "source": "/rule/customers", "destination": "/rule/customers.html" },
+    { "source": "/rule/delivery", "destination": "/rule/delivery.html" },
+    { "source": "/rule/pickups", "destination": "/rule/pickups.html" },
+    { "source": "/rule/testimonials", "destination": "/rule/testimonials.html" },
+    { "source": "/rule/reviews", "destination": "/rule/reviews.html" },
+    { "source": "/rule/blog", "destination": "/rule/blog.html" },
+    { "source": "/rule/messages", "destination": "/rule/messages.html" },
+    { "source": "/rule/settings", "destination": "/rule/settings.html" },
+    { "source": "/rule/login", "destination": "/rule/login.html" }
+  ],
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/css/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, no-cache" }
+      ]
+    },
+    {
+      "source": "/js/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, no-cache" }
+      ]
+    }
+  ]
+}

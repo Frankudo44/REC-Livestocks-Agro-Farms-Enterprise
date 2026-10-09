@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+# Admin area is restricted
+Disallow: /rule/
+
+Sitemap: https://reclivestock.ng/sitemap.xml    
