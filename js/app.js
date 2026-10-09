@@ -4207,6 +4207,11 @@ document.querySelector("[data-logout]").addEventListener("click", async (e) => {
           } catch (e) {
             showAdminError("Database probe threw: " + ((e && e.message) || String(e)));
           }
+          if (!win.REC_LOADED) {
+            showAdminError("app.js did not finish loading (a script error stopped it). Open DevTools Console for the error.");
+          } else if (!win.AdminPage) {
+            showAdminError("No page controller is registered for data-page='" + active + "'.");
+          }
           try {
             if (win.AdminPage && win.AdminPage.init) await win.AdminPage.init();
           } catch (e) {
@@ -6310,3 +6315,5 @@ UI.toast("Welcome back, " + (cur.profile.full_name || "Admin") + "!", "success")
 
   ADMIN.register("orders", AdminPage);
 })(window);
+
+window.REC_LOADED = true;
