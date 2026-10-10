@@ -14,7 +14,7 @@
   "use strict";
 
   const REC = (win.REC = win.REC || {});
-  REC.build = "2026-10-09.4";
+  REC.build = "2026-10-09.5";
 
   // Injected at build time via Vercel env (optional).
   // Falls back to values edited in this file for local dev.
@@ -4027,21 +4027,49 @@ const NAV = [
       showSetupNotice();
       return false;
     }
+    const client = REC.supabaseClient;
+    const goLogin = (reason) => {
+      location.href = REC.admin("login.html") + (reason ? "?reason=" + encodeURIComponent(reason) : "");
+    };
     try {
-const { data } = await REC.supabaseClient.auth.getSession();
-      if (!data.session) {
-        location.href = REC.admin("login.html");
+      // Prefer a server-validated user: getUser() refreshes an expired access
+      // token instead of letting a query 401 and bouncing to the login page.
+      let user = null;
+      try {
+        const { data, error } = await client.auth.getUser();
+        if (!error && data && data.user) user = data.user;
+      } catch (e) {}
+      if (!user) {
+        const { data } = await client.auth.getSession();
+        user = data && data.session && data.session.user;
+      }
+      if (!user) {
+        goLogin("no-session");
         return false;
       }
-      const profile = await REC.auth.getProfile(data.session.user.id);
-      if (!profile || profile.role !== "admin") {
-        location.href = REC.admin("login.html");
+      let profile = null;
+      try {
+        profile = await REC.auth.getProfile(user.id);
+      } catch (e) {
+        profile = null;
+      }
+      if (!profile) {
+        // One retry — covers a transient network/RLS blip right after login.
+        await new Promise((r) => setTimeout(r, 400));
+        profile = await REC.auth.getProfile(user.id);
+      }
+      if (!profile) {
+        goLogin("no-profile");
         return false;
       }
-      REC.auth.cacheUser(data.session.user, profile);
+      if (profile.role !== "admin") {
+        goLogin("not-admin");
+        return false;
+      }
+      REC.auth.cacheUser(user, profile);
       return true;
     } catch (e) {
-      location.href = REC.admin("login.html");
+      goLogin("error:" + ((e && e.message) || String(e)));
       return false;
     }
   };
@@ -4261,6 +4289,21 @@ document.querySelector("[data-logout]").addEventListener("click", async (e) => {
       REC.initSupabase();
       if (!REC.isSupabaseConfigured() || !REC.supabaseClient) {
         document.getElementById("al_setup_note").style.display = "block";
+      }
+
+      // Surface why the guard sent us back here (helps without DevTools).
+      const reason = UI.qs().get("reason");
+      if (reason) {
+        const note = document.getElementById("al_setup_note");
+        if (note) {
+          const reasons = {
+            "no-session": "Your admin session ended. Please sign in again.",
+            "no-profile": "We could not read your admin profile. Please sign in again.",
+            "not-admin": "This signed-in account does not have admin access.",
+          };
+          note.style.display = "block";
+          note.textContent = reasons[reason] || "Please sign in again (" + reason + ").";
+        }
       }
 
       form.addEventListener("submit", async (e) => {
