@@ -39,7 +39,7 @@ export default async function handler(req, res) {
   const order_number = String(req.query.order_number || "").trim().toUpperCase();
   const token = String(req.query.token || req.query.reference || "").trim();
 
-  if (!order_number || !/^REC-\d{4}-\d{6}$/.test(order_number)) {
+  if (!order_number || !/^REC-\d{4}(-\d{6}|-[A-F0-9]{8})$/.test(order_number)) {
     return json(res, 400, { ok: false, error: "Invalid order number" });
   }
   if (!token) {

@@ -464,7 +464,7 @@ drop trigger if exists protect_profile_role on public.profiles;
 create trigger protect_profile_role before update on public.profiles
   for each row execute function public.protect_profile_role();
 
--- order number: REC-YYYY-000001
+-- order number: REC-YYYY-XXXXXXXX (random; seq kept for legacy orders)
 create sequence if not exists public.order_number_seq start 1;
 
 create or replace function public.assign_order_number()
@@ -475,8 +475,9 @@ set search_path = public
 as $$
 begin
   if new.order_number is null or new.order_number = '' then
+    -- random suffix (not sequential) so references cannot be enumerated
     new.order_number = 'REC-' || to_char(now(), 'YYYY') || '-' ||
-      lpad(nextval('public.order_number_seq')::text, 6, '0');
+      upper(substring(md5(random()::text || clock_timestamp()::text) from 1 for 8));
   end if;
   return new;
 end;
@@ -570,6 +571,69 @@ $$;
 drop trigger if exists trg_log_order_movements on public.orders;
 create trigger trg_log_order_movements after insert on public.orders
   for each row execute function public.log_order_movements();
+
+-- never trust client-supplied prices: recompute each line from products.price,
+-- then the subtotal and total, before the row is written. This closes the
+-- "checkout with a tampered cart" underpayment hole.
+create or replace function public.validate_order_amounts()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  it       jsonb;
+  new_it   jsonb;
+  items    jsonb := '[]'::jsonb;
+  pid      uuid;
+  qty      int;
+  price    numeric(12,2);
+  line     numeric(12,2);
+  subtotal numeric(12,2) := 0;
+begin
+  if new.items is null or jsonb_typeof(new.items) <> 'array'
+     or jsonb_array_length(new.items) = 0 then
+    raise exception 'Order must contain at least one item';
+  end if;
+
+  for it in select jsonb_array_elements(new.items) loop
+    qty := coalesce((it->>'quantity')::int, 0);
+    if qty <= 0 then
+      raise exception 'Invalid item quantity';
+    end if;
+
+    pid := case
+      when it->>'product_id' ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+        then (it->>'product_id')::uuid
+      else null end;
+    if pid is null then
+      raise exception 'Order line is missing a valid product';
+    end if;
+
+    select p.price into price from public.products p where p.id = pid;
+    if price is null then
+      raise exception 'Order line references an unknown product';
+    end if;
+
+    line := price * qty;
+    new_it := it || jsonb_build_object('unit_price', price, 'subtotal', line);
+    items := items || new_it;
+    subtotal := subtotal + line;
+  end loop;
+
+  new.items := items;
+  new.subtotal := subtotal;
+  if new.delivery_fee is null or new.delivery_fee < 0 then
+    new.delivery_fee := 0;
+  end if;
+  new.total := subtotal + new.delivery_fee;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_validate_order_amounts on public.orders;
+create trigger trg_validate_order_amounts before insert on public.orders
+  for each row execute function public.validate_order_amounts();
 
 -- restore stock / batch availability when an order is cancelled
 create or replace function public.restock_on_cancel()

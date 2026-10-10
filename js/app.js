@@ -1007,11 +1007,12 @@
       return REC.supabaseClient;
     },
 
-    /** REC-2026-000001 style reference */
+    /** REC-2026-A1B2C3D4 style reference (random, non-enumerable) */
     generateReference() {
       const year = new Date().getFullYear();
-      const seq = Math.floor(Math.random() * 900000 + 100000);
-      return "REC-" + year + "-" + String(seq).padStart(6, "0");
+      let hex = "";
+      for (let i = 0; i < 8; i++) hex += "0123456789abcdef"[Math.floor(Math.random() * 16)];
+      return "REC-" + year + "-" + hex.toUpperCase();
     },
 
     /**
@@ -3522,9 +3523,14 @@
       return;
     }
 
-    const paragraphs = Array.isArray(post.content)
-      ? post.content.join("</p><p>")
-      : String(post.content || "").replace(/\n{2,}/g, "</p><p>");
+    // Escape DB-authored HTML before it reaches innerHTML (prevents stored XSS).
+    // Blog content is authored in a plain textarea, so HTML is not expected.
+    const rawContent = Array.isArray(post.content)
+      ? post.content.join("\n\n")
+      : String(post.content || "");
+    const paragraphs = UI.esc(rawContent)
+      .replace(/\n{2,}/g, "</p><p>")
+      .replace(/\n/g, "<br>");
 
     host.innerHTML =
       '<nav class="breadcrumb" aria-label="Breadcrumb">' +
